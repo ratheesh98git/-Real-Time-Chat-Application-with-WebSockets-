@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ room.name }}</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.1.3/socket.io.js"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+</head>
+<body>
+    <h2>Chat Room: {{ room.name }}</h2>
+    <div id="chat">
+        {% for message in messages %}
+            <p><strong>{{ message.username }}:</strong> {{ message.message }}</p>
+        {% endfor %}
+    </div>
+    <form id="messageForm">
+        <input type="text" id="message" placeholder="Enter your message" required>
+        <input type="submit" value="Send">
+    </form>
+    <script>
+        $(function() {
+            var socket = io.connect('http://' + document.domain + ':' + location.port);
+            var room = "{{ room.name }}";
+            var username = "{{ session['username'] }}";
+            
+            socket.emit('join', {'username': username, 'room': room});
+
+            $('#messageForm').submit(function(e) {
+                e.preventDefault();
+                var message = $('#message').val();
+                socket.emit('message', {'username': username, 'room': room, 'message': message});
+                $('#message').val('');
+                return false;
+            });
+
+            socket.on('message', function(data) {
+                $('#chat').append('<p><strong>' + data.username + ':</strong> ' + data.message + '</p>');
+            });
+
+            window.onbeforeunload = function() {
+                socket.emit('leave', {'username': username, 'room': room});
+            }
+        });
+    </script>
+</body>
+</html>
